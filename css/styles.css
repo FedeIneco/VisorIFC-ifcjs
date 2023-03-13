@@ -1,0 +1,74 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  overflow: hidden;
+}
+
+#three-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  outline: none;
+}
+
+#file-input {
+  z-index: 1;
+  position: absolute;
+  top: 90%;
+  right: 2%;
+}
+
+/* #button{
+  position: absolute;
+  top: 90%;
+  left: 5%;
+} */
+#output{
+  position: absolute;
+  top: 10%;
+  margin:1rem;
+  padding: 2rem;
+  padding:4px;
+  background-color: #333;
+  color: aliceblue;
+  width: 250px;
+  height: 400px;
+  overflow: auto;
+}
+
+#todo{
+  position: absolute;
+  top: 10%;
+  right: 2%;
+  margin:1rem;
+  padding: 2rem;
+  padding:4px;
+  background-color: #333;
+  color: aliceblue;
+  width: 350px;
+  height: 400px;
+  overflow: auto;
+}
+.checkboxes {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+}
+
+#archivosCargados{
+  position: absolute;
+  top: 70%;
+  margin:1rem;
+  padding: 2rem;
+  padding:4px;
+  background-color: #333;
+  color: aliceblue;
+  width: 250px;
+  height: 100px;
+  overflow: auto;
+}
