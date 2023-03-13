@@ -21,7 +21,7 @@ let ifcFileLocation = "";
 let modelID = 0;
 const ifcapi = new IfcAPI();
 import { IfcAPI } from "web-ifc/web-ifc-api";
-
+const todo = document.getElementById("todo");
 ifcapi.SetWasmPath("wasm/");
 // import {
 //   IFCWALLSTANDARDCASE,
@@ -109,14 +109,14 @@ input.addEventListener(
   (changed) => {
     const ifcURL = URL.createObjectURL(changed.target.files[0]);
     console.log(input.files[0].name);
-    $('#archivosCargados').append(input.files[0].name +"\n")
+    $("#archivosCargados").append(input.files[0].name + "\n");
     ifcFileLocation = ifcURL;
     loadIFC(ifcURL);
-    fetch(ifcURL)
-      .then((response) => response.text())
-      .then((data) => {
-        LoadFileData(data);
-      });
+    // fetch(ifcURL)
+    //   .then((response) => response.text())
+    //   .then((data) => {
+    //     LoadFileData(data);
+    //   });
     function getIfcFile(url) {
       return new Promise((resolve, reject) => {
         var oReq = new XMLHttpRequest();
@@ -130,17 +130,16 @@ input.addEventListener(
     }
 
     ifcapi.Init().then(() => {
-      getIfcFile(ifcFileLocation).then((ifcData) => {
+      getIfcFile(ifcFileLocation).then(async (ifcData) => {
         modelID = ifcapi.OpenModel(ifcData);
         let isModelOpened = ifcapi.IsModelOpen(modelID);
         console.log({ isModelOpened });
         let allLines = getAll(modelID);
         let allIFCTypes = [];
-        for (let index = 0; index < allLines.length; index++) {          
+        for (let index = 0; index < allLines.length; index++) {
           allIFCTypes.push(allLines[index].type);
-          
         }
-        
+
         // console.log(allIFCTypes);
         // console.log(allLines[0]);
         // const manager = ifcLoader.ifcManager;
@@ -174,9 +173,13 @@ ifcLoader.ifcManager.setupThreeMeshBVH(
 
 async function loadIFC(ifcURL) {
   await ifcLoader.ifcManager.setWasmPath("wasm/");
-  ifcLoader.load(ifcURL, (ifcModel) => {
+  ifcLoader.load(ifcURL, async (ifcModel) => {
     ifcModels.push(ifcModel);
     scene.add(ifcModel);
+    const manager = ifcLoader.ifcManager;
+    const ifcProject = await manager.getSpatialStructure(ifcModel.modelID);
+    console.log("ESTRUCTURA");
+    console.log(ifcProject);
   });
 }
 
@@ -211,13 +214,13 @@ async function pick(event) {
     const ifc = ifcLoader.ifcManager;
     const id = ifc.getExpressId(geometry, index);
     const modelID = found.object.modelID;
-    const props = await ifc.getItemProperties(modelID, id);
-    let json = JSON.stringify(props, null, 2);
-    $("#message").html(json);
-    console.log("ElementID: " + id);
     const manager = ifcLoader.ifcManager;
+    //Obtiene las propiedades del elemento clickado
+    const props = await ifc.getItemProperties(modelID, id);
     const type = manager.getIfcType(modelID, id);
-    console.log("tipoIFC: " + type);
+    mostrarPropiedadesElemento(props, type);
+    // console.log(typeof(Object.keys(props)));
+    // console.log(props);
   }
 }
 threeCanvas.onclick = pick;
@@ -274,11 +277,9 @@ window.onclick = (event) => highlight(event, selectMat, selectModel);
 
 //-----------------------------MOSTRAR ESTRUCTURA IFC-----------------------------
 
-const todo = document.getElementById("todo");
-
-async function LoadFileData(ifcAsText) {
-  todo.innerHTML = ifcAsText.replace(/(?:\r\n|\r|\n)/g, "<br>");
-}
+// async function LoadFileData(ifcAsText) {
+//   to.innerHTML = ifcAsText.replace(/(?:\r\n|\r|\n)/g, "<br>");
+// }
 
 //-----------------------------MULTIREADING-----------------------------
 
@@ -316,6 +317,48 @@ function getAll(modelID) {
     allLines.push(relDefProps);
   }
   return allLines;
+}
+
+//-----------------------------MOSTRAR INFO DE CADA OBJETO-----------------------------
+function mostrarPropiedadesElemento(props, type) {
+  $("#valores").html(`
+  <tr>
+          <th>Name</th>
+          <th>Value</th>          
+        </tr>
+  `);
+  let claves = Object.keys(props);
+  let valores = Object.values(props);
+  console.log(props);
+  for (let index = 0; index < claves.length; index++) {
+    if (valores[index] != null) {
+      if (index == 1) {
+        $('#valores').append(`
+          <tr>
+            <td>${claves[1]}</td>
+            <td>${type}</td>
+          </tr>
+        `);              
+        // $("#output").append(`<p><span> ${claves[1]}: </span> ${type} </p>`);
+      } else if (!valores[index].value) {
+        $('#valores').append(`
+          <tr>
+            <td>${claves[index]}</td>
+            <td>${valores[index]}</td>
+          </tr>
+        `);        
+        // $("#output").append(`<p> ${claves[index]}: ${valores[index]} </p>`);
+      } else {
+        $('#valores').append(`
+        <tr>
+          <td>${claves[index]}</td>
+          <td>${valores[index].value}</td>
+        </tr>
+      `);   
+        // $("#output").append(`<p> ${claves[index]}: ${valores[index].value} </p>`);
+      }
+    }
+  }
 }
 
 //-----------------------------MOSTRAR/OCULTAR ELEMENTOS-----------------------------

@@ -28,6 +28,14 @@ body {
   top: 90%;
   left: 5%;
 } */
+
+table, td {
+  border:1px solid black;
+}
+td{
+  padding: 5px;
+}
+
 #output{
   position: absolute;
   top: 10%;
@@ -36,9 +44,14 @@ body {
   padding:4px;
   background-color: #333;
   color: aliceblue;
-  width: 250px;
+  padding: 1rem;
+  width: 350px;
   height: 400px;
   overflow: auto;
+}
+
+#output p{
+  margin-bottom: .5rem;
 }
 
 #todo{
