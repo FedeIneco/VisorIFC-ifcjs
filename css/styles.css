@@ -85,3 +85,9 @@ td{
   height: 100px;
   overflow: auto;
 }
+
+#filtro{
+  position: absolute;
+  top: 2%;
+  right: 1rem;
+}

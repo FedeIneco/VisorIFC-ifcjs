@@ -84492,7 +84492,9 @@ function disposeBoundsTree() {
 let ifcFileLocation = "";
 let modelID = 0;
 const ifcapi = new IfcAPI2();
-document.getElementById("todo");
+document.getElementById("output");
+let resultEstructura = [];
+let result = [];
 ifcapi.SetWasmPath("wasm/");
 // import {
 //   IFCWALLSTANDARDCASE,
@@ -84508,6 +84510,7 @@ ifcapi.SetWasmPath("wasm/");
 
 //Crear la escena
 const scene = new Scene();
+let estructura = [];
 
 //Objeto para almacenar el tamaño de la ventana gráfica
 const size = {
@@ -84583,11 +84586,11 @@ input.addEventListener(
     $("#archivosCargados").append(input.files[0].name + "\n");
     ifcFileLocation = ifcURL;
     loadIFC(ifcURL);
-    // fetch(ifcURL)
-    //   .then((response) => response.text())
-    //   .then((data) => {
-    //     LoadFileData(data);
-    //   });
+    fetch(ifcURL)
+      .then((response) => response.text())
+      .then((data) => {
+        LoadFileData();
+      });
     function getIfcFile(url) {
       return new Promise((resolve, reject) => {
         var oReq = new XMLHttpRequest();
@@ -84610,13 +84613,18 @@ input.addEventListener(
         for (let index = 0; index < allLines.length; index++) {
           allIFCTypes.push(allLines[index].type);
         }
-
-        // console.log(allIFCTypes);
-        // console.log(allLines[0]);
-        // const manager = ifcLoader.ifcManager;
-        // let types;
-        // types.add(manager.getIfcType(modelID, allLines[0].expressID));
-        // console.log( types );
+        const dataArr = new Set(allIFCTypes);
+        result = [...dataArr];
+        console.log(result);  
+        mostrarInfoTypes(result);
+        // let tipos = [];
+        // for (let index = 0; index < result.length; index++) {
+        //   console.log(result[index]);    
+        //   let tipo = manager.getIfcType(modelID, result[index]);
+        //   console.log(tipo);
+        //   tipos.push(tipo);
+          
+        // }
         ifcapi.CloseModel(modelID);
       });
     });
@@ -84631,17 +84639,6 @@ ifcLoader.ifcManager.setupThreeMeshBVH(
   acceleratedRaycast
 );
 
-// List of categories names
-// const categories = {
-//   IFCWALLSTANDARDCASE,
-//   IFCSLAB,
-//   IFCFURNISHINGELEMENT,
-//   IFCDOOR,
-//   IFCWINDOW,
-//   IFCPLATE,
-//   IFCMEMBER,
-// };
-
 async function loadIFC(ifcURL) {
   await ifcLoader.ifcManager.setWasmPath("wasm/");
   ifcLoader.load(ifcURL, async (ifcModel) => {
@@ -84651,6 +84648,11 @@ async function loadIFC(ifcURL) {
     const ifcProject = await manager.getSpatialStructure(ifcModel.modelID);
     console.log("ESTRUCTURA");
     console.log(ifcProject);
+    traverseNestedObjects(ifcProject);
+    const dataArr = new Set(estructura);
+    resultEstructura = [...dataArr];
+    console.log(resultEstructura);
+    // mostrarInfoTypes(resultEstructura);
   });
 }
 
@@ -84688,10 +84690,14 @@ async function pick(event) {
     const manager = ifcLoader.ifcManager;
     //Obtiene las propiedades del elemento clickado
     const props = await ifc.getItemProperties(modelID, id);
+    console.log(props);
     const type = manager.getIfcType(modelID, id);
+    // const prueba= await manager.getMaterialsProperties(modelID, id,false);
+    const walls = await manager.getAllItemsOfType(0, props.type, false);
+    console.log(walls);
+    console.log(type);
+
     mostrarPropiedadesElemento(props, type);
-    // console.log(typeof(Object.keys(props)));
-    // console.log(props);
   }
 }
 threeCanvas.onclick = pick;
@@ -84748,9 +84754,9 @@ window.onclick = (event) => highlight(event, selectMat, selectModel);
 
 //-----------------------------MOSTRAR ESTRUCTURA IFC-----------------------------
 
-// async function LoadFileData(ifcAsText) {
-//   to.innerHTML = ifcAsText.replace(/(?:\r\n|\r|\n)/g, "<br>");
-// }
+async function LoadFileData(ifcAsText) {
+  // output.innerHTML = ifcAsText.replace(/(?:\r\n|\r|\n)/g, "<br>");
+}
 
 //-----------------------------MULTIREADING-----------------------------
 
@@ -84780,6 +84786,7 @@ function getAll(modelID) {
   let lines = ifcapi.GetAllLines(modelID);
   let lineSize = lines.size();
   let allLines = [];
+  console.log("MODELO: "+modelID);
   for (let i = 0; i < lineSize; i++) {
     // Obtiene el ElementoId de las lineas
     let relatedID = lines.get(i);
@@ -84789,6 +84796,25 @@ function getAll(modelID) {
   }
   return allLines;
 }
+
+/**
+ * TODO: TRANSFORMAR IFC NUMER A TEXTO
+ */
+
+// function transformIfcIntoText(ifcs, modelID) {
+//   console.log(ifcs);
+//   console.log("modelo"+ modelID);
+//   let types = [];
+//   const manager = ifcLoader.ifcManager;
+//   for (let index = 0; index < ifcs.length; index++) {
+//     console.log(ifcs[index]);    
+//     let tipo = manager.getIfcType(modelID, ifcs[index]);
+//     console.log(tipo);
+//     types.push(tipo);
+    
+//   }
+//   console.log(types);
+// }
 
 //-----------------------------MOSTRAR INFO DE CADA OBJETO-----------------------------
 function mostrarPropiedadesElemento(props, type) {
@@ -84800,36 +84826,66 @@ function mostrarPropiedadesElemento(props, type) {
   `);
   let claves = Object.keys(props);
   let valores = Object.values(props);
-  console.log(props);
   for (let index = 0; index < claves.length; index++) {
     if (valores[index] != null) {
       if (index == 1) {
-        $('#valores').append(`
+        $("#valores").append(`
           <tr>
             <td>${claves[1]}</td>
             <td>${type}</td>
           </tr>
-        `);              
+        `);
         // $("#output").append(`<p><span> ${claves[1]}: </span> ${type} </p>`);
       } else if (!valores[index].value) {
-        $('#valores').append(`
+        $("#valores").append(`
           <tr>
             <td>${claves[index]}</td>
             <td>${valores[index]}</td>
           </tr>
-        `);        
+        `);
         // $("#output").append(`<p> ${claves[index]}: ${valores[index]} </p>`);
       } else {
-        $('#valores').append(`
+        $("#valores").append(`
         <tr>
           <td>${claves[index]}</td>
           <td>${valores[index].value}</td>
         </tr>
-      `);   
+      `);
         // $("#output").append(`<p> ${claves[index]}: ${valores[index].value} </p>`);
       }
     }
   }
+}
+
+//-----------------------------FILTRADO E INFO POR TIPOS IFC-----------------------------
+
+
+function mostrarInfoTypes(arr){
+  for (let index = 0; index < arr.length; index++) {    
+    $('#IFCtypes').append(
+      `
+      <option value=${arr[index]}>${arr[index]}</option>
+      `
+    );  
+  }
+$('#IFCtypes').change(function () { 
+  let valor = $('#IFCtypes').val();
+  mostrarDatosIfc(parseInt(valor));  
+});
+
+}
+
+async function mostrarDatosIfc(tipo){
+  const manager = ifcLoader.ifcManager;  
+  const tiposIfc = await manager.getAllItemsOfType(0, tipo, true);
+  console.log(typeof(tiposIfc));
+  console.log(tiposIfc);
+  // for (let index = 0; index < tiposIfc.length; index++) {
+  //   const infoIFC = await manager.getItemProperties(0, tiposIfc[index], false);    
+  //   // mostrarPropiedadesElementoSeleccionado(props, type);
+  //   console.log(infoIFC);  
+  // }
+  
 }
 
 //-----------------------------MOSTRAR/OCULTAR ELEMENTOS-----------------------------
@@ -84886,6 +84942,47 @@ function mostrarPropiedadesElemento(props, type) {
 // 		else subset.removeFromParent();
 // 	});
 // }
+
+//-----------------------------MOSTRAR ESTRUCTURA PROYECTO-----------------------------
+
+/**
+ * TODO: Mostrar anidación
+ */
+let aux = 1;
+function traverseNestedObjects(obj) {
+  let aux2;
+  for (let prop in obj) {
+    if (typeof obj[prop] === "object" && obj[prop] !== null) {
+      aux2 = obj.expressID;
+      if (aux == 11) {
+        $("#message").append(
+          `
+        <ul id=${aux2}></ul>
+        `
+        );
+      } else {
+        $(`#${aux2}`).append(
+          `
+        <ul id=${obj.expressID}></ul>
+        `
+        );
+      }
+      // console.log(`Propiedad ${prop} es un objeto:`);
+      traverseNestedObjects(obj[prop]);
+    } else {
+      if (prop === "type") {
+        $(`#${obj.expressID}`).append(
+          `          
+              <li>${obj[prop]}</li>          
+          `
+        );
+        estructura.push(obj[prop]);
+      }
+      // console.log(`Propiedad ${prop} es ${obj[prop]}`);
+    }
+    aux++;
+  }
+}
 
 //-----------------------------EXTRAS-----------------------------
 
