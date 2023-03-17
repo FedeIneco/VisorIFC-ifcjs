@@ -24,6 +24,7 @@ import { IfcAPI } from "web-ifc/web-ifc-api";
 const output = document.getElementById("output");
 let resultEstructura = [];
 let result = [];
+let idsAux = [];
 ifcapi.SetWasmPath("wasm/");
 // import {
 //   IFCWALLSTANDARDCASE,
@@ -144,16 +145,10 @@ input.addEventListener(
         }
         const dataArr = new Set(allIFCTypes);
         result = [...dataArr];
-        console.log(result);  
+        console.log(result);
         mostrarInfoTypes(result);
         // let tipos = [];
-        // for (let index = 0; index < result.length; index++) {
-        //   console.log(result[index]);    
-        //   let tipo = manager.getIfcType(modelID, result[index]);
-        //   console.log(tipo);
-        //   tipos.push(tipo);
-          
-        // }
+        obtenerUnIdDeIfc(result, modelID);
         ifcapi.CloseModel(modelID);
       });
     });
@@ -177,7 +172,7 @@ async function loadIFC(ifcURL) {
     const ifcProject = await manager.getSpatialStructure(ifcModel.modelID);
     console.log("ESTRUCTURA");
     console.log(ifcProject);
-    traverseNestedObjects(ifcProject);
+    // traverseNestedObjects(ifcProject);
     const dataArr = new Set(estructura);
     resultEstructura = [...dataArr];
     console.log(resultEstructura);
@@ -315,7 +310,7 @@ function getAll(modelID) {
   let lines = ifcapi.GetAllLines(modelID);
   let lineSize = lines.size();
   let allLines = [];
-  console.log("MODELO: "+modelID);
+  console.log("MODELO: " + modelID);
   for (let i = 0; i < lineSize; i++) {
     // Obtiene el ElementoId de las lineas
     let relatedID = lines.get(i);
@@ -327,30 +322,36 @@ function getAll(modelID) {
 }
 
 /**
- * TODO: TRANSFORMAR IFC NUMER A TEXTO
+ * TODO: TRANSFORMAR IFC NUMBER A TEXTO. REVISAR POR QUË EL getIfcType devuelve todo undefined
  */
 
-// function transformIfcIntoText(ifcs, modelID) {
-//   console.log(ifcs);
-//   console.log("modelo"+ modelID);
-//   let types = [];
-//   const manager = ifcLoader.ifcManager;
-//   for (let index = 0; index < ifcs.length; index++) {
-//     console.log(ifcs[index]);    
-//     let tipo = manager.getIfcType(modelID, ifcs[index]);
-//     console.log(tipo);
-//     types.push(tipo);
-    
-//   }
-//   console.log(types);
-// }
+async function obtenerUnIdDeIfc(arr, modelID) {
+  const manager = ifcLoader.ifcManager;
+  for (let i = 0; i < arr.length; i++) {
+    let elementos = await manager.getAllItemsOfType(0, arr[i], true);
+    idsAux.push(elementos[0].expressID);
+  }
+  console.log(idsAux);
+  transformIfcIntoText(modelID, idsAux);
+}
+
+function transformIfcIntoText(modelID, ifcs) {
+  let types = [];
+  const manager = ifcLoader.ifcManager;
+  for (let index = 0; index < ifcs.length; index++) {
+    let tipo = manager.getIfcType(modelID, ifcs[index]);
+    console.log(tipo);
+    types.push(tipo);
+  }
+  // console.log(types);
+}
 
 //-----------------------------MOSTRAR INFO DE CADA OBJETO-----------------------------
 function mostrarPropiedadesElemento(props, type) {
   $("#valores").html(`
   <tr>
-          <th>Name</th>
-          <th>Value</th>          
+          <th>Nombre</th>
+          <th>Valor</th>          
         </tr>
   `);
   let claves = Object.keys(props);
@@ -388,38 +389,72 @@ function mostrarPropiedadesElemento(props, type) {
 
 //-----------------------------FILTRADO E INFO POR TIPOS IFC-----------------------------
 
-
-function mostrarInfoTypes(arr){
-  for (let index = 0; index < arr.length; index++) {    
-    $('#IFCtypes').append(
+function mostrarInfoTypes(arr) {
+  for (let index = 0; index < arr.length; index++) {
+    $("#IFCtypes").append(
       `
       <option value=${arr[index]}>${arr[index]}</option>
       `
-    );  
+    );
   }
-$('#IFCtypes').change(function () { 
-  let valor = $('#IFCtypes').val();
-  mostrarDatosIfc(parseInt(valor));  
-});
-
+  $("#IFCtypes").change(function () {
+    let valor = $("#IFCtypes").val();
+    mostrarDatosIfc(parseInt(valor));
+  });
 }
 
-async function mostrarDatosIfc(tipo){
-  const manager = ifcLoader.ifcManager;  
+async function mostrarDatosIfc(tipo) {
+  const manager = ifcLoader.ifcManager;
   const tiposIfc = await manager.getAllItemsOfType(0, tipo, true);
-  console.log(typeof(tiposIfc));
-  console.log(tiposIfc);
-  // for (let index = 0; index < tiposIfc.length; index++) {
-  //   const infoIFC = await manager.getItemProperties(0, tiposIfc[index], false);    
-  //   // mostrarPropiedadesElementoSeleccionado(props, type);
-  //   console.log(infoIFC);  
-  // }
-  
+  crearTablaElementoSeleccionado(tiposIfc);
 }
 
-function mostrarPropiedadesElementoSeleccionado(props, type){
+function crearTablaElementoSeleccionado(props) {
+  $('#table').html(``);
+  let claves = [];
+  for (let index = 0; index < props.length; index++) {
+    claves = Object.keys(props[index]);
+  }
 
+  $("#table").append(
+    `
+      <tr id="encabezado">
+      </tr>
+      `
+  );
+  // Crear una celda para cada encabezado y asignar el texto correspondiente
+  for (let j = 0; j < claves.length; j++) {
+    $("#encabezado").append(
+      `      
+        <td>${claves[j]}</td>      
+      `
+    );
+  }
+  for(let p = 0; p<props.length; p++){
+    $("#table").append(
+      `
+    <tr id= encabezado${p}>  
+       
+    </tr>
+    `
+    );
+    let valores = Object.values(props[p]);
+    console.log(props[p]);
+    for (let j = 0; j < valores.length; j++) { 
+      
+      if(valores)
+      $(`#encabezado${p}`).append(
+        `      
+         <td>${valores[j]}</td>          
+      `
+      );
+    }
+  }
 
+  // props.forEach((prop) => {       
+  //   let valores = Object.values(prop);
+    
+  // });  
 }
 
 //-----------------------------MOSTRAR/OCULTAR ELEMENTOS-----------------------------
@@ -480,43 +515,65 @@ function mostrarPropiedadesElementoSeleccionado(props, type){
 //-----------------------------MOSTRAR ESTRUCTURA PROYECTO-----------------------------
 
 /**
- * TODO: Mostrar anidación
+ *  TODO: Mostrar anidación **************************************
  */
-let aux = 1;
-function traverseNestedObjects(obj) {
-  let aux2;
-  for (let prop in obj) {
-    if (typeof obj[prop] === "object" && obj[prop] !== null) {
-      aux2 = obj.expressID;
-      if (aux == 11) {
-        $("#message").append(
-          `
-        <ul id=${aux2}></ul>
-        `
-        );
-      } else {
-        $(`#${aux2}`).append(
-          `
-        <ul id=${obj.expressID}></ul>
-        `
-        );
-      }
-      // console.log(`Propiedad ${prop} es un objeto:`);
-      traverseNestedObjects(obj[prop]);
-    } else {
-      if (prop === "type") {
-        $(`#${obj.expressID}`).append(
-          `          
-              <li>${obj[prop]}</li>          
-          `
-        );
-        estructura.push(obj[prop]);
-      }
-      // console.log(`Propiedad ${prop} es ${obj[prop]}`);
-    }
-    aux++;
-  }
-}
+// let aux = 1;
+// function traverseNestedObjects(obj) {
+//   let aux2;
+//   for (let prop in obj) {
+//     if (typeof obj[prop] === "object" && obj[prop] !== null) {
+//       aux2 = obj.expressID;
+//       if (aux == 11) {
+//         $("#message").append(
+//           `
+//         <ul id=${aux2}></ul>
+//         `
+//         );
+//       } else {
+//         $(`#${aux2}`).append(
+//           `
+//         <ul id=${obj.expressID}></ul>
+//         `
+//         );
+//       }
+//       // console.log(`Propiedad ${prop} es un objeto:`);
+//       traverseNestedObjects(obj[prop]);
+//     } else {
+//       if (prop === "type") {
+//         $(`#${obj.expressID}`).append(
+//           `
+//               <li>${obj[prop]}</li>
+//           `
+//         );
+//         estructura.push(obj[prop]);
+//       }
+//       // console.log(`Propiedad ${prop} es ${obj[prop]}`);
+//     }
+//     aux++;
+//   }
+// }
+
+//-----------------------------EXPORTAR DATOS A EXCEL-----------------------------
+const tabla = document.getElementById("tabla"),
+  btnExportar = document.querySelector("#exportExcel");
+btnExportar.addEventListener("click", function () {
+  let tableExport = new TableExport(tabla, {
+    exportButtons: false, // No queremos botones
+    filename: "Mi tabla de Excel", //Nombre del archivo de Excel
+    sheetname: "Mi tabla de Excel", //Título de la hoja
+  });
+  let datos = tableExport.getExportData();
+  let preferenciasDocumento = datos.tabla.xlsx;
+  tableExport.export2file(
+    preferenciasDocumento.data,
+    preferenciasDocumento.mimeType,
+    preferenciasDocumento.filename,
+    preferenciasDocumento.fileExtension,
+    preferenciasDocumento.merges,
+    preferenciasDocumento.RTL,
+    preferenciasDocumento.sheetname
+  );
+});
 
 //-----------------------------EXTRAS-----------------------------
 

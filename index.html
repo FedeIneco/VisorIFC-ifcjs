@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="css/styles.css" />
-    <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+    <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />    
     <title>IFC.js</title>
   </head>
   <body>
@@ -24,14 +24,17 @@
     </div>
     <div id="filtro">
       <label for="IFCtypes">Choose a ifcType:</label>
-
       <select name="types" id="IFCtypes">
-        
+        <option value="#">Seleccionar</option>
       </select>
+      <button id="exportExcel">Exportar datos a Excel</button>
     </div>
     <div id="todo">
       <table id="valores"></table>
     </div>
+<div id="prueba">
+    <table id="table"></table>
+  </div>
     <!-- <div class="checkboxes">
       <div>
         <input checked="true" id="IFCWALLSTANDARDCASE" type="checkbox" />
@@ -63,6 +66,9 @@
       </div>
     </div> -->
     <script src="jquery-3.6.3.min.js"></script>
+    <script src="FileSaver.min.js"></script>
+    <script src="xlsx.full.min.js"></script>
+    <script src="tableexport.min.js"></script>
     <script src="bundle.js"></script>
   </body>
 </html>

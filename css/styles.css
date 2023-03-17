@@ -29,7 +29,8 @@ body {
   left: 5%;
 } */
 
-table, td {
+table, td, th {
+  margin: 0 auto;
   border:1px solid black;
 }
 td{
@@ -91,3 +92,17 @@ td{
   top: 2%;
   right: 1rem;
 }
+#prueba{
+  overflow: auto;
+  background-color: #333;
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  top: 10%;
+  left: 30%;
+  color: antiquewhite;
+}
+/* #table{
+
+  
+} */
