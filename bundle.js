@@ -84911,12 +84911,27 @@ function crearTablaElementoSeleccionado(props) {
     console.log(props[p]);
     for (let j = 0; j < valores.length; j++) { 
       
-      if(valores)
+
+      if(valores[j] === null || valores[j] === undefined){
+            $(`#encabezado${p}`).append(
+      `      
+         <td>Unknown</td>          
+      `
+      );
+      }else if(valores[j].value){
+      $(`#encabezado${p}`).append(
+        `      
+         <td>${valores[j].value}</td>          
+      `
+      );
+      }else {
       $(`#encabezado${p}`).append(
         `      
          <td>${valores[j]}</td>          
       `
       );
+      }
+      
     }
   }
 
@@ -85023,26 +85038,12 @@ function crearTablaElementoSeleccionado(props) {
 // }
 
 //-----------------------------EXPORTAR DATOS A EXCEL-----------------------------
-const tabla = document.getElementById("tabla"),
-  btnExportar = document.querySelector("#exportExcel");
-btnExportar.addEventListener("click", function () {
-  let tableExport = new TableExport(tabla, {
-    exportButtons: false, // No queremos botones
-    filename: "Mi tabla de Excel", //Nombre del archivo de Excel
-    sheetname: "Mi tabla de Excel", //Título de la hoja
-  });
-  let datos = tableExport.getExportData();
-  let preferenciasDocumento = datos.tabla.xlsx;
-  tableExport.export2file(
-    preferenciasDocumento.data,
-    preferenciasDocumento.mimeType,
-    preferenciasDocumento.filename,
-    preferenciasDocumento.fileExtension,
-    preferenciasDocumento.merges,
-    preferenciasDocumento.RTL,
-    preferenciasDocumento.sheetname
-  );
-});
+
+const exportButton = document.getElementById('exportExcel');
+exportButton.onclick = () => {
+    const book = XLSX.utils.table_to_book(table);
+    XLSX.writeFile(book, "Walls_Table.xlsx");
+ };
 
 //-----------------------------EXTRAS-----------------------------
 
