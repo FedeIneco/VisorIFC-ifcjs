@@ -87,12 +87,13 @@ td{
   overflow: auto;
 }
 
-#filtro{
+#filtro{  
   position: absolute;
   top: 2%;
   right: 1rem;
 }
 #prueba{
+  display: none;
   overflow: auto;
   background-color: #333;
   position: absolute;

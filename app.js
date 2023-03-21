@@ -573,7 +573,7 @@ function crearTablaElementoSeleccionado(props) {
 const exportButton = document.getElementById('exportExcel');
 exportButton.onclick = () => {
     const book = XLSX.utils.table_to_book(table);
-    XLSX.writeFile(book, "Walls_Table.xlsx");
+    XLSX.writeFile(book, "Propiedades.xlsx");
  }
 
 //-----------------------------EXTRAS-----------------------------
