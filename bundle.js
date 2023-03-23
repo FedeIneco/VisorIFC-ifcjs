@@ -84493,9 +84493,8 @@ let ifcFileLocation = "";
 let modelID = 0;
 const ifcapi = new IfcAPI2();
 document.getElementById("output");
-let resultEstructura = [];
 let result = [];
-let idsAux = [];
+let typesIFC;
 ifcapi.SetWasmPath("wasm/");
 // import {
 //   IFCWALLSTANDARDCASE,
@@ -84511,7 +84510,6 @@ ifcapi.SetWasmPath("wasm/");
 
 //Crear la escena
 const scene = new Scene();
-let estructura = [];
 
 //Objeto para almacenar el tamaño de la ventana gráfica
 const size = {
@@ -84607,19 +84605,22 @@ input.addEventListener(
     ifcapi.Init().then(() => {
       getIfcFile(ifcFileLocation).then(async (ifcData) => {
         modelID = ifcapi.OpenModel(ifcData);
-        let isModelOpened = ifcapi.IsModelOpen(modelID);
-        console.log({ isModelOpened });
+        ifcapi.IsModelOpen(modelID);
+        // console.log({ isModelOpened });
         let allLines = getAll(modelID);
         let allIFCTypes = [];
+        let textoIFCTypes = [];
         for (let index = 0; index < allLines.length; index++) {
-          allIFCTypes.push(allLines[index].type);
-        }
+          allIFCTypes.push(allLines[index].type);          
+          textoIFCTypes.push(allLines[index].constructor.name);
+        }                                      
+        const dataTypes = new Set(textoIFCTypes);   
+        typesIFC = [...dataTypes];   
+        console.log(typesIFC);                      
         const dataArr = new Set(allIFCTypes);
         result = [...dataArr];
-        console.log(result);
-        mostrarInfoTypes(result);
-        // let tipos = [];
-        obtenerUnIdDeIfc(result, modelID);
+        console.log(result);        
+        mostrarInfoTypes(result, typesIFC);        
         ifcapi.CloseModel(modelID);
       });
     });
@@ -84643,10 +84644,7 @@ async function loadIFC(ifcURL) {
     const ifcProject = await manager.getSpatialStructure(ifcModel.modelID);
     console.log("ESTRUCTURA");
     console.log(ifcProject);
-    // traverseNestedObjects(ifcProject);
-    const dataArr = new Set(estructura);
-    resultEstructura = [...dataArr];
-    console.log(resultEstructura);
+    // traverseNestedObjects(ifcProject);    
     // mostrarInfoTypes(resultEstructura);
   });
 }
@@ -84685,12 +84683,12 @@ async function pick(event) {
     const manager = ifcLoader.ifcManager;
     //Obtiene las propiedades del elemento clickado
     const props = await ifc.getItemProperties(modelID, id);
-    console.log(props);
+    // console.log(props);
     const type = manager.getIfcType(modelID, id);
     // const prueba= await manager.getMaterialsProperties(modelID, id,false);
-    const walls = await manager.getAllItemsOfType(0, props.type, false);
-    console.log(walls);
-    console.log(type);
+    // const walls = await manager.getAllItemsOfType(0, props.type, false);
+    // console.log(walls);
+    // console.log(type);
 
     mostrarPropiedadesElemento(props, type);
   }
@@ -84781,38 +84779,15 @@ function getAll(modelID) {
   let lines = ifcapi.GetAllLines(modelID);
   let lineSize = lines.size();
   let allLines = [];
-  console.log("MODELO: " + modelID);
   for (let i = 0; i < lineSize; i++) {
     // Obtiene el ElementoId de las lineas
     let relatedID = lines.get(i);
     // Obtiene el ElementData utilizando el relatedID
     let relDefProps = ifcapi.GetLine(modelID, relatedID);
+    //*object.constructor.name para objetern el nombre de la clase del objeto    
     allLines.push(relDefProps);
   }
   return allLines;
-}
-
-/**
- * TODO: TRANSFORMAR IFC NUMBER A TEXTO. REVISAR POR QUË EL getIfcType devuelve todo undefined
- */
-
-async function obtenerUnIdDeIfc(arr, modelID) {
-  const manager = ifcLoader.ifcManager;
-  for (let i = 0; i < arr.length; i++) {
-    let elementos = await manager.getAllItemsOfType(0, arr[i], true);
-    idsAux.push(elementos[0].expressID);
-  }
-  console.log(idsAux);
-  transformIfcIntoText(modelID, idsAux);
-}
-
-function transformIfcIntoText(modelID, ifcs) {
-  const manager = ifcLoader.ifcManager;
-  for (let index = 0; index < ifcs.length; index++) {
-    let tipo = manager.getIfcType(modelID, ifcs[index]);
-    console.log(tipo);
-  }
-  // console.log(types);
 }
 
 //-----------------------------MOSTRAR INFO DE CADA OBJETO-----------------------------
@@ -84833,24 +84808,21 @@ function mostrarPropiedadesElemento(props, type) {
             <td>${claves[1]}</td>
             <td>${type}</td>
           </tr>
-        `);
-        // $("#output").append(`<p><span> ${claves[1]}: </span> ${type} </p>`);
+        `);        
       } else if (!valores[index].value) {
         $("#valores").append(`
           <tr>
             <td>${claves[index]}</td>
             <td>${valores[index]}</td>
           </tr>
-        `);
-        // $("#output").append(`<p> ${claves[index]}: ${valores[index]} </p>`);
+        `);        
       } else {
         $("#valores").append(`
         <tr>
           <td>${claves[index]}</td>
           <td>${valores[index].value}</td>
         </tr>
-      `);
-        // $("#output").append(`<p> ${claves[index]}: ${valores[index].value} </p>`);
+      `);        
       }
     }
   }
@@ -84858,11 +84830,12 @@ function mostrarPropiedadesElemento(props, type) {
 
 //-----------------------------FILTRADO E INFO POR TIPOS IFC-----------------------------
 
-function mostrarInfoTypes(arr) {
-  for (let index = 0; index < arr.length; index++) {
+//Mostrar en select ifcTypes
+function mostrarInfoTypes(arrNumerico, arrTexto) {
+  for (let index = 0; index < arrNumerico.length; index++) {
     $("#IFCtypes").append(
       `
-      <option value=${arr[index]}>${arr[index]}</option>
+      <option value=${arrNumerico[index]}>${arrTexto[index]}</option>
       `
     );
   }
@@ -84878,6 +84851,7 @@ async function mostrarDatosIfc(tipo) {
   crearTablaElementoSeleccionado(tiposIfc);
 }
 
+//Crear tabla que se exporta a excel
 function crearTablaElementoSeleccionado(props) {
   $('#table').html(``);
   let claves = [];
@@ -84907,15 +84881,14 @@ function crearTablaElementoSeleccionado(props) {
     </tr>
     `
     );
-    let valores = Object.values(props[p]);
-    console.log(props[p]);
+    let valores = Object.values(props[p]);    
     for (let j = 0; j < valores.length; j++) { 
       
 
       if(valores[j] === null || valores[j] === undefined){
             $(`#encabezado${p}`).append(
       `      
-         <td>Unknown</td>          
+         <td>None</td>          
       `
       );
       }else if(valores[j].value){
@@ -84933,109 +84906,8 @@ function crearTablaElementoSeleccionado(props) {
       }
       
     }
-  }
-
-  // props.forEach((prop) => {       
-  //   let valores = Object.values(prop);
-    
-  // });  
+  } 
 }
-
-//-----------------------------MOSTRAR/OCULTAR ELEMENTOS-----------------------------
-
-// // Gets the name of a category
-// function getName(category) {
-// 	const names = Object.keys(categories);
-// 	return names.find(name => categories[name] === category);
-// }
-
-// // Gets all the items of a category
-// async function getAll(category) {
-// 	return ifcLoader.ifcManager.getAllItemsOfType(0, category, false);
-// }
-
-// // Creates a new subset containing all elements of a category
-// async function newSubsetOfType(category) {
-// 	const ids = await getAll(category);
-// 	return ifcLoader.ifcManager.createSubset({
-// 		modelID: 0,
-// 		scene,
-// 		ids,
-// 		removePrevious: true,
-// 		customID: category.toString(),
-// 	});
-// }
-
-// // Stores the created subsets
-// const subsets = {};
-
-// async function setupAllCategories() {
-// 	const allCategories = Object.values(categories);
-// 	for (let i = 0; i < allCategories.length; i++) {
-// 		const category = allCategories[i];
-// 		await setupCategory(category);
-// 	}
-// }
-
-// // Creates a new subset and configures the checkbox
-// async function setupCategory(category) {
-// 	subsets[category] = await newSubsetOfType(category);
-// 	setupCheckBox(category);
-// }
-
-// // Sets up the checkbox event to hide / show elements
-// function setupCheckBox(category) {
-// 	const name = getName(category);
-// 	const checkBox = document.getElementById(name);
-// 	checkBox.addEventListener('change', (event) => {
-//     alert("Cambio");
-// 		const checked = event.target.checked;
-// 		const subset = subsets[category];
-// 		if (checked) scene.add(subset);
-// 		else subset.removeFromParent();
-// 	});
-// }
-
-//-----------------------------MOSTRAR ESTRUCTURA PROYECTO-----------------------------
-
-/**
- *  TODO: Mostrar anidación **************************************
- */
-// let aux = 1;
-// function traverseNestedObjects(obj) {
-//   let aux2;
-//   for (let prop in obj) {
-//     if (typeof obj[prop] === "object" && obj[prop] !== null) {
-//       aux2 = obj.expressID;
-//       if (aux == 11) {
-//         $("#message").append(
-//           `
-//         <ul id=${aux2}></ul>
-//         `
-//         );
-//       } else {
-//         $(`#${aux2}`).append(
-//           `
-//         <ul id=${obj.expressID}></ul>
-//         `
-//         );
-//       }
-//       // console.log(`Propiedad ${prop} es un objeto:`);
-//       traverseNestedObjects(obj[prop]);
-//     } else {
-//       if (prop === "type") {
-//         $(`#${obj.expressID}`).append(
-//           `
-//               <li>${obj[prop]}</li>
-//           `
-//         );
-//         estructura.push(obj[prop]);
-//       }
-//       // console.log(`Propiedad ${prop} es ${obj[prop]}`);
-//     }
-//     aux++;
-//   }
-// }
 
 //-----------------------------EXPORTAR DATOS A EXCEL-----------------------------
 
